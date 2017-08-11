@@ -1,0 +1,113 @@
+<!doctype html>
+
+<html>
+	<head>
+		<title>Page Title</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="initial-scale=1.0">
+		<script src="https://d3js.org/d3.v3.min.js"></script>
+	</head>
+
+	<body>
+      <div>資料</div>
+       <svg></svg>
+       
+        <script>
+            
+
+            d3.csv("farmland.csv",function(data)  {
+                
+
+                
+                
+                var nested = { values: d3.nest()         // 包覆 d3.nest 產生的結果
+                  .key(function(d) { return d["是否法定"]; })  // 分別使用「款」「項」「目」來製作階層
+                  .key(function(d) { return d["地形"]; })
+                  .key(function(d) { return d["是否農用"]; })
+                .key(function(d) { return d["特性"]; })
+                .key(function(d) { return d["使用類型"]; })
+                  .entries(data) // 使用的資料來自 d3.csv 的回傳值
+                            
+                };
+                
+
+                
+                
+     
+                
+                var treemap = d3.layout.treemap().size([900,700]);
+                treemap.children(function(d) { return d.values; }); // 改用 values，而非 children
+                treemap.value(function(d) { return +d["面積"]; }); // 改用總額，而非 value
+                var nodes = treemap.nodes( nested );
+                
+                console.log(nodes);
+                
+                d3.select("svg").attr({
+                    width: "900",
+                    height: "900"
+                });
+                
+                
+                d3.select("body>svg").selectAll("rect").data(nodes).enter().append("rect")
+                  .attr({
+                    x: function(it) { return it.x; },
+                    y: function(it) { return it.y; },
+                    width: function(it) { return it.dx; },
+                    height: function(it) { return it.dy; },
+                    fill: "none", stroke: "white"
+                  }).on("mouseover",function(d){
+//                    console.log(d);
+                    d3.select("div").text(d["是否法定"]+","+d["地形"]+","+d["是否農用"]+","+d["特性"]+","+d["使用類型"]+","+d["面積"]);
+                });
+        
+
+                //加入顏色
+               var color = d3.scale.category20();
+//               d3.select("svg").selectAll("rect").attr({fill: function(d) {
+//                    return color(d["是否農用"]);
+//               }});
+               d3.select("body>svg").selectAll("rect").attr({
+                   fill: function(d){
+                       if(d.特性==="違規" && d.使用類型==="工廠"){
+                             return "red";
+                          }else{
+                              return color(d["是否農用"]);
+                          }
+                   }
+               }).on("click",function(d){
+                   console.log(d);
+                   console.log(this);
+
+               });
+                
+                
+//                //加入文字
+//                d3.select("svg").selectAll("text").data(nodes).enter().append("text")
+//              .attr({
+//                x: function(d) { return d.x + d.dx/2; },
+//                y: function(d) { return d.y + d.dy/2; },
+//                "text-anchor": "middle", // 水平置中
+//                "dominant-baseline": "central" // 垂直置中
+//              })
+//              .text(function(d) { return d["項"]; });
+                
+                
+
+
+                
+                
+                
+                
+                
+          });
+
+            
+            
+            
+
+        </script>
+
+
+	</body>
+</html>
+
