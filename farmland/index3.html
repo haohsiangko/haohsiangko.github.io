@@ -1,0 +1,279 @@
+<!doctype html>
+
+<html>
+	<head>
+		<title>Page Title</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="initial-scale=1.0">
+		<script src="https://d3js.org/d3.v3.min.js"></script>
+		<style>
+                #tooltip{
+                  position: absolute;
+                  /* left: 20px; */
+                  /* top:  100px; */
+                  background: #fff;
+                  width: 150px;
+                  height: auto;
+                  padding: 0px 10px;
+                  border-radius: 5px;
+                  box-shadow: 5px 5px 10px rgba(0,0,0,0.3);
+                }
+
+                #tooltip.hidden{
+                  display: none;
+                } 
+        </style>
+        
+
+
+	</head>
+
+	<body>
+          <svg></svg>
+          
+          <p>法定農業用地，平地範圍</p>
+          <p>綠色：農業使用　橘色：非農業使用　紅色：非農業使用之工廠</p>
+          
+          
+          <!--<div>tooltip顯示資料</div>-->
+          <div id="tooltip" class="hidden">
+          
+          <p><strong id="purpose">使用類型</strong></p>
+          <p id="farm_usage">是否農用</p>
+          <p id="area">面積</p>
+          <p id="legal">是否法定</p>
+          <p id="terrain">地形</p>
+          
+          </div>  
+   
+
+       
+      
+        <script>
+       
+       
+            
+
+            d3.csv("farmland0817.csv",function(data)  {
+                
+                //設定svg版面
+                d3.select("svg")
+                  .attr({
+                        width: "900",
+                        height: "900"
+                  });
+                
+                //資料巢狀化
+                var nested = { values: 
+                                d3.nest()
+                                  .key(function(d) { return d["是否法定"]; }) 
+                                  .key(function(d) { return d["地形"]; })
+                                  .key(function(d) { return d["是否農用"]; })
+                                  .key(function(d) { return d["使用類型"]; })
+                                  .entries(data)
+                             };
+//                console.log("印出nested");
+//                console.log(nested);
+                
+                //引入treemap的layout    
+                var treemap = d3.layout.treemap().size([900,900]);
+                treemap.children(function(d) { return d.values; }); //為什麼要這行
+                treemap.value(function(d) { return +d["面積"]; }); 
+                var nodes = treemap.nodes(nested);
+        
+//                console.log("印出nodes:");
+//                console.log(nodes);
+                
+                var areas = nodes[0].value; //總面積
+//                console.log("areas:"+areas);
+                
+
+                
+                //在svg畫出treemap
+                 var rects = d3.select("svg").selectAll("rect").data(nodes);
+                     rects.enter().append("rect")
+                                  .attr({
+                                        x: function(d) { return d.x; },
+                                        y: function(d) { return d.y; },
+                                        width: function(d) { return d.dx; },
+                                        height: function(d) { return d.dy; },
+                                        fill: "none", stroke: "white"
+                                  })
+//                    .on("mouseover",function(d){
+////                    console.log(d);
+//                    d3.select("div").text(d["是否法定"]+","+d["地形"]+","+d["是否農用"]+","+d["特性"]+","+d["使用類型"]+","+d["面積"]);
+//                })
+                ;
+//                rects.exit().remove(); //原本原始碼沒這行
+                
+                
+                
+
+                
+        
+
+               //把各矩形加入顏色
+//               var color = d3.scale.category20();
+//               d3.select("svg").selectAll("rect").attr({fill: function(d) {
+//                    return color(d["是否農用"]);
+//               }});
+                
+                
+
+                
+               rects.attr({
+                       fill: function(d){
+                                   //先判斷是農用還是非農用
+                                   if(d.是否農用==="農業使用"){
+                                          return "#02C874"; // 綠底
+                                      }
+
+                                   if(d.是否農用==="非農業使用"){
+                                       
+                                           if(d.使用類型==="工廠"){
+                                                 return "#CE0000"; //深紅
+                                           }
+                                           
+                                          return "#FF9224"; //橘 
+                                   }
+                       }
+               }).on("click",function(d){
+                   console.log("點擊印出d:");
+                   console.log(d);
+                   console.log("點擊印出this:");
+                   console.log(this);
+
+               });
+                
+                
+//                d3.selectAll("#texts").attr({
+//                    x: function(d) { return d.x + d.dx/2; },
+//                    y: function(d) { return d.y + d.dy/2; },
+//                    "text-anchor": "middle", // 水平置中
+//                    "dominant-baseline": "central" // 垂直置中   
+//                }).text("hi").style("font-size","5pt");
+                
+                
+
+                
+                
+//                //加入文字
+        var texts =  d3.select("svg").selectAll("text").data(nodes);
+                
+            texts.enter()
+                 .append("text")
+                 .attr({
+                        x: function(d) { return d.x + d.dx/2; },
+                        y: function(d) { return d.y + d.dy/2; },
+                        "text-anchor": "middle", // 水平置中
+                        "dominant-baseline": "central", // 垂直置中
+                        class: "texts"
+                 })
+                 .text(function(d) {
+                           if(d.value/areas>=0.01&&d.depth===5){
+                                return Math.round(d.value/areas*100*10)/10+"%"; 
+                           }else{
+                               return "";
+                           }
+                       })
+//                  .append("tspan")
+//                  .attr({
+//                        x: function(d) { return d.x + d.dx/2; },
+//                        y: function(d) { return d.y + d.dy/2+ 20; },
+//                        "text-anchor": "middle", // 水平置中
+//                        "dominant-baseline": "central", // 垂直置中
+//                        })
+//                  .text(function(d) {
+//                           if(d.value/areas>=0.01&&d.depth===6){
+//                                return d.使用類型; 
+//                           }else{
+//                               return "";
+//                           }
+//                       } )
+                ;
+                
+                
+                
+               
+                
+                
+                
+                //mouse移入，加入提示框
+                rects.on("mouseover",function(d){
+    //                console.log("啟動mouseover");
+                    
+//                    console.log(d);
+
+                    //讓選到的人顏色變淺
+                    //先選出目前的顏色
+                    var nowColor = d3.select(this).attr("fill");
+
+                    //調整透明度
+                    nowColor = d3.select(this).style("opacity", 0.8);
+
+                    //讓位置去吃矩形的
+                    var tooltipX = +d3.select(this).attr("x"); //要+
+                    var tooltipY = +d3.select(this).attr("y");
+                    var tooltipW = +d3.select(this).attr("width");
+
+                    //改變位置
+                    d3.select("#tooltip").style({
+                        left: tooltipX+15+tooltipW+"px",
+                        top: tooltipY+15+"px"
+                    })
+
+                    //替換tooltip內容(選擇其id後，修改內容)
+                    d3.select("#legal").text(d.是否法定);
+                    d3.select("#terrain").text(d.地形);
+                    d3.select("#farm_usage").text(d.是否農用);
+                    d3.select("#purpose").text("使用類型："+d.使用類型);
+                    d3.select("#area").text("面積："+d.面積+"公頃 ("+Math.round(d.面積/areas*100*1000)/1000+"%)");
+
+
+
+                    //顯現tooltip
+                    d3.select("#tooltip").classed("hidden", false);
+                    
+
+
+                });
+            
+            //mouse移出圓圈
+            rects.on("mouseout",function(d){
+                    d3.select("#tooltip").classed("hidden", true);
+//                    console.log("mouseout!");
+                
+                    
+                    
+                //讓選到的人顏色變淺
+                //先選出目前的顏色
+                var nowColor = d3.select(this).attr("fill");
+                
+                //調整透明度
+//                console.log(nowColor);
+                nowColor = d3.select(this).attr({
+                    fill: nowColor
+                }).style("opacity", 1);
+                
+
+            
+            
+            
+            });
+                
+
+                
+                
+                
+          });
+
+            
+            
+            
+
+        </script>
+
+
+	</body>
+</html>
+
