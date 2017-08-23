@@ -1,0 +1,40 @@
+<!doctype html>
+
+<html>
+	<head>
+		<title>Learning jQuery</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="initial-scale=1.0">
+		
+		
+        <!--引入jQuery-->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js">
+        </script>
+        <script>
+            $(document).ready(function(){
+                $("button").click(function(){
+                    $("p").hide();
+                    $("#heading").hide();
+                    $(".explanation").hide();
+                });
+            });
+        </script>
+		
+	</head>
+
+	<body>
+	
+	<h2 id="heading">This is a heading</h2>
+
+    <p>This is a paragraph.</p>
+    <p>This is another paragraph.</p>
+    
+    
+    <h5 class="explanation">圖說</h5>
+    <h5 class="explanation">圖說</h5>
+    
+
+    <button>Click me to hide paragraphs</button>
+
+	</body>
+</html>
